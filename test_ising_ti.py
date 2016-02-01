@@ -45,47 +45,64 @@ def translate(matr1, matr2):
     matr_v=new_a    
     return matr_v, matr_h    
 
+def record(data,rows):
+    rows.append(data)
+    return rows
+    
 keys=['lattice','H','M']
 outer_set={}
 
-rows1=[]
-rows2=[]
-rows3=[]
 
 all_M=[]
 all_H=[]
 count=0
-numelems=nr*nr
-indexlist=np.arange(0,numelems) # default index ordering if "inorder" is chosen
+repeats=np.zeros(len(temp_val))
 
-for T in temp_val:
+def comp2(lat1,lat2):
+    for l ,r in map(None, lat1,lat2):
+        if l!=r:
+            return False
+    return True
+        
+for T in temp_val[-3:-1]:
     print T
     a.random_spins()
+    s=0 # number of repeated configurations
+    print a._spins    
     rows1=[]
     rows2=[]
     rows3=[]
     inner_set={'lattice':[],'H':[],'M':[]}
+
     #a.diagram()
-    for iter in range(iters):
+    for k1 in range(100):
         i=randint(0,nr-1)
         j=randint(0,nr-1)
-        En=a.cond_spin_flip(i,j,T);
+        En=a.cond_spin_flip(i,j,T)
+        print a._spins
         # record configuration and its properties
-        config=np.reshape(a._spins,(nr*nr))
-        rows1.append(config)
+    
+        #print "new configuration", new_config
+        if En!=int(0.0):
+            repeats[count]=repeats[count]+1
+        
+        #print "old configuration", old_config
+        #rows1.append(np.reshape(a._spins,(nr*nr)))
+        rows1=record(np.reshape(a._spins,(nr*nr)),rows1)
         rows2.append(a._E)
         rows3.append(a._M)
         matr1=a._spins
         matr2=a._spins
-
+        config=np.reshape(a._spins,(nr*nr))
+        print config
         # check the condition if all spins are aligned
         if all(x==config[0] for x in config):
             pass
         else: 
             # generate diagonal translations of hte lattice
             matr_d=np.transpose(matr1) #45 degree rotation
-            config2=np.reshape(a._spins,(nr*nr))
-            rows1.append(config2)
+            config2=np.reshape(matr_d,(nr*nr))
+            rows1=record(config2,rows1)
             rows2.append(a._E)
             rows3.append(a._M)
             for k in range(nr-1):
@@ -94,10 +111,10 @@ for T in temp_val:
                 [matr_1, matr_2]=translate(matr1, matr2)
                 matr1=matr_1
                 matr2=matr_2
-                rows1.append(np.reshape(matr_1,(nr*nr)))
+                rows1=record(np.reshape(matr_1,(nr*nr)),rows1)
                 rows2.append(a._E)
                 rows3.append(a._M)
-                rows1.append(np.reshape(matr_2,(nr*nr)))
+                rows1=record(np.reshape(matr_2,(nr*nr)),rows1)
                 rows2.append(a._E)
                 rows3.append(a._M)            
             
@@ -141,16 +158,19 @@ def show_results(outer_set,temp_val, all_M, all_H):
     curve3.set_data(range(0,len(outer_set[L-1]['H'])),outer_set[L-1]['H'])        
     plt.draw()
 
+import pylab as P
+
 def histogr(output):    
-    import pylab as P
+
     # the histogram of the data with histtype='step'
     P.figure()
     n, bins, patches = P.hist(output, 50, normed=1, histtype='stepfilled')
     P.setp(patches, 'facecolor', 'g', 'alpha', 0.75)
     
-train_labels=outer_set[0]['H'] # hot configuration
-histogr(train_labels)    
-
+#train_labels=outer_set[0]['H'] # hot configuration
+#histogr(train_labels)    
+histogr(all_H)
+P.savefig('Hamil_train2.png')
 # form and pickle the dataset
 
 L=len(outer_set)
@@ -173,3 +193,4 @@ def load_data(data_file):
     with gzip.open(data_file,'rb') as f:
         data=f.read()    
     return data    
+
