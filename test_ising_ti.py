@@ -25,8 +25,9 @@ if expr=="testing":
     temp_val=[b*np.exp(-x) for x in np.arange(a, b, 0.1)]
     iters=100
 else:
-    temp_val=[20*np.exp(-x) for x in np.arange(0.0,20.0,0.1)]
-    iters=1000    
+    #temp_val=[20*np.exp(-x) for x in np.arange(0.0,20.0,0.1)]
+    temp_val=[x for x in np.arange(-35.0,35.0, 0.1)]
+    iters=500    
 a=I.Ising_lattice(nr)
 a.random_spins()
 a.diagram()
@@ -64,22 +65,18 @@ def comp2(lat1,lat2):
             return False
     return True
         
-for T in temp_val[-3:-1]:
+for T in temp_val:
     print T
     a.random_spins()
     s=0 # number of repeated configurations
-    print a._spins    
-    rows1=[]
-    rows2=[]
-    rows3=[]
+ 
     inner_set={'lattice':[],'H':[],'M':[]}
 
     #a.diagram()
-    for k1 in range(100):
+    for k1 in range(iters):
         i=randint(0,nr-1)
         j=randint(0,nr-1)
         En=a.cond_spin_flip(i,j,T)
-        print a._spins
         # record configuration and its properties
     
         #print "new configuration", new_config
@@ -88,23 +85,26 @@ for T in temp_val[-3:-1]:
         
         #print "old configuration", old_config
         #rows1.append(np.reshape(a._spins,(nr*nr)))
-        rows1=record(np.reshape(a._spins,(nr*nr)),rows1)
-        rows2.append(a._E)
-        rows3.append(a._M)
+        if k1==0:
+            rows1=record(np.reshape(a._spins,(nr*nr)),[])
+            rows2=record(a._E,[])
+            rows3=record(a._M,[])
+        else:
+            rows1=record(np.reshape(a._spins,(nr*nr)),rows1)
+            rows2=record(a._E,rows2)
+            rows3=record(a._M,rows3)            
         matr1=a._spins
         matr2=a._spins
         config=np.reshape(a._spins,(nr*nr))
-        print config
         # check the condition if all spins are aligned
         if all(x==config[0] for x in config):
             pass
         else: 
             # generate diagonal translations of hte lattice
             matr_d=np.transpose(matr1) #45 degree rotation
-            config2=np.reshape(matr_d,(nr*nr))
-            rows1=record(config2,rows1)
-            rows2.append(a._E)
-            rows3.append(a._M)
+            rows1=record(np.reshape(matr_d,(nr*nr)),rows1)
+            rows2=record(a._E,rows2)
+            rows3=record(a._M,rows3)
             for k in range(nr-1):
 
                 # generate vertical and horizontal translations of the lattice
@@ -112,11 +112,11 @@ for T in temp_val[-3:-1]:
                 matr1=matr_1
                 matr2=matr_2
                 rows1=record(np.reshape(matr_1,(nr*nr)),rows1)
-                rows2.append(a._E)
-                rows3.append(a._M)
+                rows2=record(a._E,rows2)
+                rows3=record(a._M,rows3)
                 rows1=record(np.reshape(matr_2,(nr*nr)),rows1)
-                rows2.append(a._E)
-                rows3.append(a._M)            
+                rows2=record(a._E,rows2)
+                rows3=record(a._M,rows3)            
             
     #a.diagram()                
     inner_set['lattice']=rows1
@@ -157,6 +157,8 @@ def show_results(outer_set,temp_val, all_M, all_H):
     curve2.set_data(range(0,len(outer_set[0]['H'])),outer_set[0]['H']) 
     curve3.set_data(range(0,len(outer_set[L-1]['H'])),outer_set[L-1]['H'])        
     plt.draw()
+
+show_results(outer_set,temp_val, all_M, all_H)
 
 import pylab as P
 
