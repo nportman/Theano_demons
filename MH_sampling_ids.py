@@ -13,11 +13,12 @@ import random
 import gzip
 import cPickle
 import MH_dataset_generator as mh
+import ising_model_princeton2 as I
 
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
-
+from operator import itemgetter
 
 nr=input('Enter the dimension N of the square lattice -->')
 reps=nr*nr # number of lattice sites
@@ -31,7 +32,19 @@ train_set=train[0]
 train_y=train[1]
 test_set=test[0]
 test_y=test[1]
-
+training=[]
+testing=[]
+for i in range(len(train_set)):
+    row=train_set[i]
+    training.append(np.hstack((row,train_y[i])))
+for i in range(len(test_set)):    
+    row2=test_set[i]
+    testing.append(np.hstack((row2,test_y[i])))
+np.reshape(testing,(len(testing),17))
+np.reshape(training,(len(training),17))
+    
+train2=sorted(training,key=itemgetter(-1))
+test2=sorted(testing,key=itemgetter(-1))
 # plotting data    
 def show_results(outer_set,temp_val, all_M, all_H):
     fig = plt.figure()
@@ -67,16 +80,16 @@ def show_results(outer_set,temp_val, all_M, all_H):
 #show_results(outer_set,temp_val, all_M, all_H)
 
 def get_MH_sampled_IDs(data):
-    temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
-    iters=2000
-    N_seeds=10    
+    #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
+    temp_val=[0.0,0.1]
+    iters=10000
+    N_seeds=100    
     nr=4
-    
-    keys=['lattice','H','M']
+ 
     count=0
     all_M=[]
     all_H=[]
-    repeats=np.zeros(len(temp_val))
+    #repeats=np.zeros(len(temp_val))
     R=[]
     for T in temp_val:
         print T
@@ -88,7 +101,7 @@ def get_MH_sampled_IDs(data):
             M_1=a._M
             #a.diagram()
             for k in range(iters): # num of MH steps
-                a.random_conf(data)
+                a.up_or_down(data)
                 conf2=a._spins 
                 En_2=a._E
                 M_2=a._M
@@ -97,14 +110,14 @@ def get_MH_sampled_IDs(data):
                     conf=conf1 # stay at the lattice value (i,j) with the probability
                     En=En_1
                     M=M_1
-                    repeats[count]=repeats[count]+1
+                    #repeats[count]=repeats[count]+1
                 else:
                     conf=conf2 # update lattice value i,j and the corresponding energy
                     En=En_2
                     M=M_2
                 # record configuration and its properties
             
-                if k>=1000:
+                if k>=3000:
                     R.append(np.hstack((np.reshape(conf,(nr*nr)),En,M)))
                     all_M.append(M)
                     all_H.append(En)

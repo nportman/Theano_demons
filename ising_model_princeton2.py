@@ -98,10 +98,26 @@ class Ising_lattice:
    def random_conf(self,data):
       L=len(data)      
       I=randint(0,L-1)
-      self._spins=np.reshape(data[I],(self._N,self._N))
+      print data[I]
+      config=data[I][:-1]
+      self._spins=np.reshape(config,(self._N,self._N))
       self._compute_E_M()
-
+      self._id=I
+      
+   def up_or_down(self,data):
+      ID=self._id
+      alpha=np.random.random()
+      if alpha>0.5:
+          ID=ID-1
+      else:
+          ID=ID+1
+      config=data[ID][:-1]
+      self._spins=np.reshape(config,(self._N,self._N))
+      self._compute_E_M()
+      self._id=ID
+      
    # Query methods
+      
     
    def N(self):
       return self._N
