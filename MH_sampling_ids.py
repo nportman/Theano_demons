@@ -14,6 +14,7 @@ import gzip
 import cPickle
 import MH_dataset_generator as mh
 import ising_model_princeton2 as I
+import matplotlib.pyplot as plt
 
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.decomposition import PCA
@@ -82,7 +83,7 @@ def show_results(outer_set,temp_val, all_M, all_H):
 def get_MH_sampled_IDs(data):
     #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
     temp_val=[0.0,0.1]
-    iters=10000
+    iters=3000
     N_seeds=100    
     nr=4
  
@@ -93,7 +94,9 @@ def get_MH_sampled_IDs(data):
     R=[]
     for T in temp_val:
         print T
+        outer_set={}
         for n in range(N_seeds):
+            Hs=[]
             a=I.Ising_lattice(nr)
             a.random_conf(data)
             conf1=a._spins
@@ -112,19 +115,36 @@ def get_MH_sampled_IDs(data):
                     M=M_1
                     #repeats[count]=repeats[count]+1
                 else:
-                    conf=conf2 # update lattice value i,j and the corresponding energy
+                    conf=conf2 # update lattice value i,j and the corresponding energy                   
                     En=En_2
                     M=M_2
+                    if k<=1000:
+                        R.append(np.hstack((np.reshape(conf2,(nr*nr)),En,M)))
+                        all_M.append(M)
+                        all_H.append(En)
+                        Hs.append(En_2)
+            outer_set[n]=Hs
                 # record configuration and its properties
             
-                if k>=3000:
-                    R.append(np.hstack((np.reshape(conf,(nr*nr)),En,M)))
-                    all_M.append(M)
-                    all_H.append(En)
-                else:
-                    continue
+                #if k>=3000:
+                    #R.append(np.hstack((np.reshape(conf,(nr*nr)),En,M)))
+                    #all_M.append(M)
+                    #all_H.append(En)
+                #else:
+                    #continue
+    
+         #a.diagram()
+        t1 = np.arange(0, len(outer_set[0]))
+        t2 = np.arange(0, len(outer_set[99]))
 
-         #a.diagram()                
+        plt.figure(1)
+        plt.subplot(211)
+        plt.plot(t1, outer_set[0], 'b')
+        print outer_set[0]
+        plt.subplot(212)
+        plt.plot(t2, outer_set[99], 'r')
+        plt.show()                
+        
         count=count+1
     result=R
     result=np.array(result)
