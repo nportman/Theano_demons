@@ -176,6 +176,6 @@ def histogr(output):
 test_res=get_MH_sampled_IDs(test2,test_classes) 
 H=[]
 for i in range(len(test_res)):
-    H.append(test_res[i][-1])
+    H.append(test_res[i][-2])
 histogr(H)    
  
