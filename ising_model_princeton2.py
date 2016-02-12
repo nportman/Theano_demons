@@ -100,6 +100,7 @@ class Ising_lattice:
       I=randint(0,L-1)
       print data[I]
       config=data[I][:-1]
+      #config=data[I]
       self._spins=np.reshape(config,(self._N,self._N))
       self._compute_E_M()
       self._id=I
@@ -114,7 +115,7 @@ class Ising_lattice:
           else:
               ID=ID+1
               
-      config=data[ID][:-1]
+      config=data[ID][:-1]      
       self._spins=np.reshape(config,(self._N,self._N))
       self._compute_E_M()
       self._id=ID

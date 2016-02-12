@@ -85,7 +85,7 @@ def show_results(outer_set,temp_val, all_M, all_H):
 def get_MH_sampled_IDs(data,classes):
     #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
     temp_val=[0.0,0.1]
-    iters=3000
+    iters=6000
     N_seeds=100    
     nr=4
  
@@ -128,11 +128,14 @@ def get_MH_sampled_IDs(data,classes):
                     conf=conf2 # update lattice value i,j and the corresponding energy                   
                     En=En_2
                     M=M_2
-                    if k>1000:
-                        R.append(np.hstack((np.reshape(conf2,(nr*nr)),En,M)))
-                        all_M.append(M)
-                        all_H.append(En)
-                        Hs.append(En_2)
+                conf1=conf
+                En_1=En
+                M_1=M
+                if k>4000:
+                    R.append(np.hstack((np.reshape(conf,(nr*nr)),En,M)))
+                    all_M.append(M)
+                    all_H.append(En)
+                    Hs.append(En)
             outer_set[n]=Hs
                 # record configuration and its properties
             
@@ -174,5 +177,5 @@ test_res=get_MH_sampled_IDs(test2,test_classes)
 H=[]
 for i in range(len(test_res)):
     H.append(test_res[i][-1])
-histogr(test_res)    
+histogr(H)    
  
