@@ -122,23 +122,25 @@ class Ising_lattice:
       
    def up_or_down2(self,data):
       L=len(data)
-      ID=randint(0,L-1)
-      if ID not in [0,L-1]:
-          alpha=np.random.random()
-          if alpha>0.5:
-              ID=ID-1
-          else:
-              ID=ID+1
-              
+      if L>1:
+          ID=randint(0,L-1)
+          if ID not in [0,L-1]:
+              alpha=np.random.random()
+              if alpha>0.5:
+                  ID=ID-1
+              else:
+                  ID=ID+1
+      else:
+          ID=0
       config=data[ID][:-1]
       self._spins=np.reshape(config,(self._N,self._N))
       self._compute_E_M()
       self._label=data[ID][-1]
    
  
-   def choose_level(self,data,Len):
+   def choose_level(self,data,classes):
       label=self._label
-      if label not in [0,Len-1]:
+      if label not in [np.min(classes),np.max(classes)]:
           beta=np.random.random()
           if beta<1./3:
               label=label-1
@@ -146,6 +148,10 @@ class Ising_lattice:
               pass
           else:
               label=label+1
+      #elif label==np.min(classes):
+      #    label=np.max(classes) # next label is the maximal energy class
+      #else:
+      #    label=np.min(classes) # allow wrapping         
       return label   # return  candidate energy level     
       
      

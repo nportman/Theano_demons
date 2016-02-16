@@ -84,10 +84,15 @@ def show_results(outer_set,temp_val, all_M, all_H):
 
 def get_MH_sampled_IDs(data,classes):
     #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
-    temp_val=[0.0,0.1]
-    iters=6000
-    N_seeds=100    
+    temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
+    iters=4000
+    N_seeds=10    
     nr=4
+
+    #temp_val=[0.0,0.1]
+    #iters=6000
+    #N_seeds=100    
+    #nr=4
  
     count=0
     all_M=[]
@@ -109,12 +114,12 @@ def get_MH_sampled_IDs(data,classes):
             M_1=a._M
             #a.diagram()
             for k in range(iters): # num of MH steps
-                label=a.choose_level(data,Len) # next candidate from the label group
+                label=a.choose_level(data,classes) # next candidate from the label group
                 ids=np.where(dat[:,-1]==label)
                 idd=ids[0]
                 group=dat[idd]# look at this level group
-                if len(group)>2:                 
-                    a.up_or_down2(group)
+                #if len(group)>2:                 
+                a.up_or_down2(group)
                 conf2=a._spins 
                 En_2=a._E
                 M_2=a._M
@@ -131,7 +136,7 @@ def get_MH_sampled_IDs(data,classes):
                 conf1=conf
                 En_1=En
                 M_1=M
-                if k>4000:
+                if k>=3000:
                     R.append(np.hstack((np.reshape(conf,(nr*nr)),En,M)))
                     all_M.append(M)
                     all_H.append(En)
@@ -147,16 +152,16 @@ def get_MH_sampled_IDs(data,classes):
                     #continue
     
          #a.diagram()
-        t1 = np.arange(0, len(outer_set[0]))
-        t2 = np.arange(0, len(outer_set[99]))
+        #t1 = np.arange(0, len(outer_set[0]))
+        #t2 = np.arange(0, len(outer_set[99]))
 
-        plt.figure(1)
-        plt.subplot(211)
-        plt.plot(t1, outer_set[0], 'b')
-        print outer_set[0]
-        plt.subplot(212)
-        plt.plot(t2, outer_set[99], 'r')
-        plt.show()                
+        #plt.figure(1)
+        #plt.subplot(211)
+        #plt.plot(t1, outer_set[0], 'b')
+        #print outer_set[0]
+        #plt.subplot(212)
+        #plt.plot(t2, outer_set[9], 'r')
+        #plt.show()                
         
         count=count+1
     result=R
