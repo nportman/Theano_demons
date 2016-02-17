@@ -148,10 +148,10 @@ class Ising_lattice:
               pass
           else:
               label=label+1
-      #elif label==np.min(classes):
-      #    label=np.max(classes) # next label is the maximal energy class
-      #else:
-      #    label=np.min(classes) # allow wrapping         
+      elif label==np.min(classes):
+          label=np.max(classes) # next label is the maximal energy class
+      else:
+          label=np.min(classes) # allow wrapping         
       return label   # return  candidate energy level     
       
      

@@ -84,7 +84,8 @@ def show_results(outer_set,temp_val, all_M, all_H):
 
 def get_MH_sampled_IDs(data,classes):
     #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
-    temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
+    #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
+    temp_val=[20.0]    
     iters=4000
     N_seeds=10    
     nr=4
@@ -176,11 +177,11 @@ def histogr(output):
     P.figure()
     n, bins, patches = P.hist(output, 50, normed=1, histtype='stepfilled')
     P.setp(patches, 'facecolor', 'g', 'alpha', 0.75)
-    P.savefig('Hamil_test.png')     
+    P.savefig('Hamil_test_20.png')     
 
-test_res=get_MH_sampled_IDs(test2,test_classes) 
+train_res=get_MH_sampled_IDs(train2,train_classes) 
 H=[]
-for i in range(len(test_res)):
-    H.append(test_res[i][-2])
+for i in range(len(train_res)):
+    H.append(train_res[i][-2])
 histogr(H)    
  
