@@ -177,7 +177,7 @@ def histogr(output):
     P.figure()
     n, bins, patches = P.hist(output, 50, normed=1, histtype='stepfilled')
     P.setp(patches, 'facecolor', 'g', 'alpha', 0.75)
-    P.savefig('Hamil_test_20.png')     
+    P.savefig('Hamil_test_200.png')     
 
 train_res=get_MH_sampled_IDs(train2,train_classes) 
 H=[]
