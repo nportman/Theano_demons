@@ -122,16 +122,7 @@ class Ising_lattice:
       
    def up_or_down2(self,data):
       L=len(data)
-      if L>1:
-          ID=randint(0,L-1)
-          if ID not in [0,L-1]:
-              alpha=np.random.random()
-              if alpha>0.5:
-                  ID=ID-1
-              else:
-                  ID=ID+1
-      else:
-          ID=0
+      ID=np.random.randint(0,L)
       config=data[ID][:-1]
       self._spins=np.reshape(config,(self._N,self._N))
       self._compute_E_M()

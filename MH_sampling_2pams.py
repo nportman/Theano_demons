@@ -81,20 +81,47 @@ def show_results(outer_set,temp_val, all_M, all_H):
     plt.draw()
     plt.savefig('new_dat.png') 
 #show_results(outer_set,temp_val, all_M, all_H)
+def Hamiltonian(data):
+    # define the energy of the ferromagnetic configuration
+    sz=np.shape(data)
+    E=0.0
+    # compute horizontal interaction energies
+    for i in range(sz[0]):
+         for j in range(sz[0]):
+            E-=data[i,j]*(data[i,(j+1)%sz[0]]+data[(i+1)%sz[0],j])
+    return E        
 
+def Magn(data):
+    M=np.sum(data)
+    return M
+    
+def rand_move(data,N):
+    L=len(data)
+    ID=np.random.randint(0,L)
+    config=data[ID][:-1]
+    conf=np.reshape(config,(N,N))
+    En=Hamiltonian(conf)
+    M=Magn(conf)
+    return (config, En, M)
+ 
+def choose_level(data,classes,deck):
+    tot_len=np.max(classes)-np.min(classes)+1
+    beta=np.random.random()
+    if beta<1./3:
+        deck=(deck-1)%tot_len
+    elif beta>=1./3 and beta<2./3:
+        pass
+    else:
+        deck=(deck+1)%tot_len
+    return deck   # return  candidate energy level     
+              
 def get_MH_sampled_IDs(data,classes):
     #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
     #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
-    temp_val=[20.0]    
+    temp_val=[10]    
     iters=4000
     N_seeds=10    
     nr=4
-
-    #temp_val=[0.0,0.1]
-    #iters=6000
-    #N_seeds=100    
-    #nr=4
- 
     count=0
     all_M=[]
     all_H=[]
@@ -108,36 +135,56 @@ def get_MH_sampled_IDs(data,classes):
         outer_set={}
         for n in range(N_seeds):
             Hs=[]
-            a=I.Ising_lattice(nr)
-            a.random_conf(data)
-            conf1=a._spins
-            En_1=a._E
-            M_1=a._M
-            #a.diagram()
+            a1=I.Ising_lattice(nr)
+            a1.random_conf(data)
+            conf1=a1._spins
+            En_1=a1._E
+            M_1=a1._M
+            deck=a1._deck # initialization
             for k in range(iters): # num of MH steps
-                label=a.choose_level(data,classes) # next candidate from the label group
+                #print 'fix this'
+                kB = 1.0
+                # let us consider another configuration
+                label=choose_level(data,classes,deck) # next candidate from the label group
                 ids=np.where(dat[:,-1]==label)
                 idd=ids[0]
                 group=dat[idd]# look at this level group
-                #if len(group)>2:                 
-                a.up_or_down2(group)
-                conf2=a._spins 
-                En_2=a._E
-                M_2=a._M
-                dE=En_1-En_2
-                if (dE<0.0 or (T>0.0 and (np.random.random()<np.exp(-dE/T)))):
-                    conf=conf1 # stay at the lattice value (i,j) with the probability
-                    En=En_1
-                    M=M_1
-                    #repeats[count]=repeats[count]+1
-                else:
-                    conf=conf2 # update lattice value i,j and the corresponding energy                   
+                (conf2, En_2, M_2)=rand_move(group,nr)
+                # calc whether it goes uphill
+                dE=En_2-En_1
+                if (dE<0.0):
+                    #accept
+                    conf=conf2 # go downhill
                     En=En_2
                     M=M_2
-                conf1=conf
+                    flag=1
+                    deck=label
+                else:  
+                    #accept with prob
+                    your_random_number = np.random.random()
+                    if (your_random_number < np.exp(-dE/(kB*T))):
+                        #go uphill
+                        conf=conf2 # update lattice value i,j and the corresponding energy                   
+                        En=En_2
+                        M=M_2
+                        flag=1
+                        deck=label
+                    else:
+                        #stay where you are
+                        conf=conf1
+                        En=En_1
+                        M=M_1
+                        flag=0
+
+                # update conf1
+                conf1=conf 
                 En_1=En
                 M_1=M
-                if k>=3000:
+
+#                we have now decided to either stay where we were, or change
+#                provided we are past the warm up stage, let's store the result
+
+                if k>=3000 and flag==1:
                     R.append(np.hstack((np.reshape(conf,(nr*nr)),En,M)))
                     all_M.append(M)
                     all_H.append(En)
@@ -177,7 +224,7 @@ def histogr(output):
     P.figure()
     n, bins, patches = P.hist(output, 50, normed=1, histtype='stepfilled')
     P.setp(patches, 'facecolor', 'g', 'alpha', 0.75)
-    P.savefig('Hamil_test_200.png')     
+    P.savefig('Hamil_test.png')     
 
 train_res=get_MH_sampled_IDs(train2,train_classes) 
 H=[]
