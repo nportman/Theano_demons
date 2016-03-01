@@ -107,12 +107,15 @@ def rand_move(data,N):
 def choose_level(data,classes,deck):
     tot_len=np.max(classes)-np.min(classes)+1
     beta=np.random.random()
-    if beta<1./3:
-        deck=(deck-1)%tot_len
-    elif beta>=1./3 and beta<2./3:
-        pass
-    else:
-        deck=(deck+1)%tot_len
+    if deck==np.min(classes):
+        deck=deck+1
+    elif deck==np.max(classes):
+        deck=deck-1 
+    else:           
+        if beta<0.5:
+            deck=deck-1
+        else:    
+            deck=deck+1
     return deck   # return  candidate energy level     
               
 def get_MH_sampled_IDs(data,classes):
@@ -127,7 +130,6 @@ def get_MH_sampled_IDs(data,classes):
     all_H=[]
     #repeats=np.zeros(len(temp_val))
     R=[]
-    Len=len(classes)
     dat=np.array(data)
     
     for T in temp_val:
@@ -162,7 +164,7 @@ def get_MH_sampled_IDs(data,classes):
                 else:  
                     #accept with prob
                     your_random_number = np.random.random()
-                    if (your_random_number > np.exp(-dE/(kB*T))):
+                    if (your_random_number < np.exp(-dE/(kB*T))):
                         #go uphill
                         conf=conf2 # update lattice value i,j and the corresponding energy                   
                         En=En_2

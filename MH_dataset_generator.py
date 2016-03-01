@@ -110,8 +110,9 @@ def partition(training_data,train_labels):
 # having separated into training and testing datasets we run MH algo at 10 random seeds
 # per temperature with 2000 configurations
 def get_MH_samples(data):
-    temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
-    iters=2000
+    #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
+    temp_val=[40.0]    
+    iters=4000
     N_seeds=10    
     nr=4
     
@@ -136,7 +137,7 @@ def get_MH_samples(data):
                 #print "new configuration", new_config
                 if En!=int(0.0):
                     repeats[count]=repeats[count]+1
-                if k>=1000:
+                if k>=3000:
                     R.append(np.hstack((np.reshape(a._spins,(nr*nr)),a._E,a._M)))
                     all_M.append(a._M)
                     all_H.append(a._E)
@@ -157,10 +158,14 @@ def histogr(output):
     P.figure()
     n, bins, patches = P.hist(output, 50, normed=1, histtype='stepfilled')
     P.setp(patches, 'facecolor', 'g', 'alpha', 0.75)
-    P.savefig('Hamil_trainnew.png')     
+    P.savefig('Hamil_train_40.png')     
  
 
     #histogr(all_H)
  
-  
+#H=[]
+#for i in range(len(result)):
+#    H.append(result[i][-2])
+#histogr(H)    
+   
     
