@@ -15,39 +15,12 @@ import cPickle
 import MH_dataset_generator as mh
 import ising_model_princeton2 as I
 import matplotlib.pyplot as plt
-
+import collections
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
 from operator import itemgetter
-
-nr=input('Enter the dimension N of the square lattice -->')
-reps=nr*nr # number of lattice sites
-
-# generate complete dataset
-(training_data,training_H,training_M)=mh.complete_dataset(reps)
-train_labels=mh.gen_train_labels(training_data, training_H, training_M)
-#partition into training 90% and testing 10% datasets
-[train,test]=mh.partition(training_data,train_labels)
-train_set=train[0]
-train_y=train[1]
-test_set=test[0]
-test_y=test[1]
-test_classes=np.unique(test_y)
-train_classes=np.unique(train_y)
-training=[]
-testing=[]
-for i in range(len(train_set)):
-    row=train_set[i]
-    training.append(np.hstack((row,train_y[i])))
-for i in range(len(test_set)):    
-    row2=test_set[i]
-    testing.append(np.hstack((row2,test_y[i])))
-np.reshape(testing,(len(testing),17))
-np.reshape(training,(len(training),17))
-    
-train2=sorted(training,key=itemgetter(-1))
-test2=sorted(testing,key=itemgetter(-1))
+from scipy import stats
 # plotting data    
 def show_results(outer_set,temp_val, all_M, all_H):
     fig = plt.figure()
@@ -116,9 +89,31 @@ def choose_level(data,classes,deck):
             deck=deck-1
         else:    
             deck=deck+1
-    return deck   # return  candidate energy level     
+    return deck   # return  candidate energy level 
+    
+def choose_level2(classes, deck, freq):
+    if deck==np.min(classes):
+        deck=deck+1
+    elif deck==np.max(classes):
+        deck=deck-1
+    else:
+        pr=np.zeros(2)
+        prob1=freq[deck-1]
+        prob2=freq[deck+1]
+        s=prob1+prob2
+        pr[0]=prob1/s
+        pr[1]=prob2/s
+        xk=np.arange(2)
+        custm=stats.rv_discrete(name='custm',values=(xk,pr))
+        beta=custm.rvs(size=1)
+        
+        if beta[0]==0:
+            deck=deck-1
+        else:
+            deck=deck+1
+    return deck
               
-def get_MH_sampled_IDs(data,classes):
+def get_MH_sampled_IDs(data,classes,freq):
     #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
     #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
     temp_val=[40]    
@@ -139,21 +134,22 @@ def get_MH_sampled_IDs(data,classes):
             Hs=[]
             a1=I.Ising_lattice(nr)
             a1.random_conf(data)
-            conf1=a1._spins
-            En_1=a1._E
-            M_1=a1._M
+            conf=a1._spins
+            En=a1._E
+            M=a1._M
             deck=a1._deck #https://www.google.ca/?gws_rd=ssl initialization
             for k in range(iters): # num of MH steps
                 #print 'fix this'
                 kB = 1.0
                 # let us consider another configuration
-                label=choose_level(data,classes,deck) # next candidate from the label group
+                label=choose_level2(classes,deck,freq) # next candidate from the label group
+                #label=randint(np.max([0,deck-1]),np.min([np.max(classes),deck+1]))                
                 ids=np.where(dat[:,-1]==label)
                 idd=ids[0]
                 group=dat[idd]# look at this level group
                 (conf2, En_2, M_2)=rand_move(group,nr)
                 # calc whether it goes uphill
-                dE=En_2-En_1
+                dE=En_2-En
                 if (dE<0.0):
                     #accept
                     conf=conf2 # go downhill
@@ -171,37 +167,16 @@ def get_MH_sampled_IDs(data,classes):
                         M=M_2
                         flag=1
                         deck=label
-                    else:
-                        #stay where you are
-                        conf=conf1
-                        En=En_1
-                        M=M_1
-                        flag=0
-
-                # update conf1
-                conf1=conf 
-                En_1=En
-                M_1=M
 
 #                we have now decided to either stay where we were, or change
 #                provided we are past the warm up stage, let's store the result
-
                 if k>=3000:
                     R.append(np.hstack((np.reshape(conf,(nr*nr)),En,M)))
                     all_M.append(M)
                     all_H.append(En)
                     Hs.append(En)
             outer_set[n]=Hs
-                # record configuration and its properties
-            
-                #if k>=3000:
-                    #R.append(np.hstack((np.reshape(conf,(nr*nr)),En,M)))
-                    #all_M.append(M)
-                    #all_H.append(En)
-                #else:
-                    #continue
-    
-         #a.diagram()
+        
         #t1 = np.arange(0, len(outer_set[0]))
         #t2 = np.arange(0, len(outer_set[99]))
 
@@ -226,11 +201,54 @@ def histogr(output):
     P.figure()
     n, bins, patches = P.hist(output, 50, normed=1, histtype='stepfilled')
     P.setp(patches, 'facecolor', 'g', 'alpha', 0.75)
-    P.savefig('Hamil_test_2pams_40.png')     
+    P.savefig('Hamil_compl_40.png')     
 
-train_res=get_MH_sampled_IDs(train2,train_classes) 
-H=[]
-for i in range(len(train_res)):
-    H.append(train_res[i][-2])
-histogr(H)    
+def main():
+    nr=input('Enter the dimension N of the square lattice -->')
+    reps=nr*nr # number of lattice sites
+
+    # generate complete dataset
+    (training_data,training_H,training_M)=mh.complete_dataset(reps)
+    train_labels=mh.gen_train_labels(training_data, training_H, training_M)
+    # compute frequesncies
+    counter=collections.Counter(train_labels)
+    val=counter.values()
+    freq=np.array(val)/np.float(len(train_labels))
+
+    #partition into training 90% and testing 10% datasets
+    #[train,test]=mh.partition(training_data,train_labels)
+    #train_set=train[0]
+    #train_y=train[1]
+    #test_set=test[0]
+    #test_y=test[1]
+    #test_classes=np.unique(test_y)
+    #train_classes=np.unique(train_y)
+    #training=[]
+    #testing=[]
+    #for i in range(len(train_set)):
+    #row=train_set[i]
+    #training.append(np.hstack((row,train_y[i])))
+    #for i in range(len(test_set)):    
+    #row2=test_set[i]
+    #testing.append(np.hstack((row2,test_y[i])))
+    #np.reshape(testing,(len(testing),17))
+    #np.reshape(training,(len(training),17))
+    
+    #train2=sorted(training,key=itemgetter(-1))
+    #test2=sorted(testing,key=itemgetter(-1))
+    train=[]
+    for i in range(len(training_data)):    
+        row2=training_data[i]
+        train.append(np.hstack((row2,train_labels[i])))
+    np.reshape(train,(len(train),17))
+    
+    train2=sorted(train,key=itemgetter(-1))
+    train_classes=np.unique(train_labels)    
+    train_res=get_MH_sampled_IDs(train2,train_classes,freq) 
+    H=[]
+    for i in range(len(train_res)):
+        H.append(train_res[i][-2])
+    histogr(H)    
  
+if __name__=='__main__':
+    main()

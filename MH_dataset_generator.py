@@ -56,13 +56,13 @@ def complete_dataset(reps):
     return (training_data,training_H,training_M)
     
 def gen_train_labels(training_data, training_H, training_M):
-    expr=input('Enter "H" for Hamiltonian energy estimation and "M" for magnetization -->')
-    if expr=="H":
+    #expr=input('Enter "H" for Hamiltonian energy estimation and "M" for magnetization -->')
+    #if expr=="H":
         #choose the seconf last column in the dataset
-        train_labels=training_H # Hamiltonian
-    else:
-        train_labels=training_M
-    
+    #    train_labels=training_H # Hamiltonian
+    #else:
+    #    train_labels=training_M
+    train_labels=training_H
     # map Hamiltonian or magnetization data into classes    
     classes=np.unique(train_labels)
     num_classes=len(classes)
