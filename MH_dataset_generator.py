@@ -111,7 +111,7 @@ def partition(training_data,train_labels):
 # per temperature with 2000 configurations
 def get_MH_samples(data):
     #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
-    temp_val=[40.0]    
+    temp_val=[1.0]    
     iters=4000
     N_seeds=10    
     nr=4

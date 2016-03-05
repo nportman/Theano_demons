@@ -20,6 +20,7 @@ from random import randint
 import matplotlib.pyplot as plt
 from operator import itemgetter
 import MH_dataset_generator as mh
+import os, sys
 
 def Hamiltonian(data):
     # define the energy of the ferromagnetic configuration
@@ -51,53 +52,60 @@ def complete_dataset(reps):
         training_M.append(Magn(config))
     return (training_data,training_H,training_M)
 
-(complete, Hs, Ms)=complete_dataset(16)
-#const=8.6173324*10**(-5)
-C=np.arange(0.1,40.0,0.1)
-#T=C+273.15
-Hs=np.array(Hs)
-levels=np.unique(Hs)
-weight=np.zeros(len(levels))
-y_val1=np.zeros(len(C))
-y_val2=np.zeros(len(C))
-k=0
-for labels in levels:
-    ids=np.where(Hs==labels)
-    weight[k]=len(ids[0])
-    k=k+1
+def compute_boltz_weights(Hs):
+    #const=8.6173324*10**(-5)
+    C=np.arange(0.1,40.0,0.1)
+    #C=[40.0]
+    #T=C+273.15
+    Hs=np.array(Hs)
+    levels=np.unique(Hs)
+    weight=np.zeros(len(levels))
+    y_val1=np.zeros(len(C))
+    y_val2=np.zeros(len(C))
+    k=0
+    for labels in levels:
+        ids=np.where(Hs==labels)
+        weight[k]=len(ids[0])
+        k=k+1
     
-prob={}
-i=0
-for t in C:
-    print t
-    num=weight*np.exp(-levels/(t))
-    denom=np.sum(num)
-    prob[i]=num/denom
-    y_val1[i]=prob[i][0]
-    y_val2[i]=prob[i][1]
-    i=i+1
+    prob={}
+    i=0
+    for t in C:
+        print t
+        num=weight*np.exp(-levels/(t))
+        denom=np.sum(num)
+        prob[i]=num/denom
+        y_val1[i]=prob[i][0]
+        y_val2[i]=prob[i][1]
+        i=i+1
     
-col=[]
-# display a graph of probability of the most likely state as a function of temperature
+    col=[]
+    # display a graph of probability of the most likely state as a function of temperature
+    plt.figure(1)
+    plt.plot(C, y_val1, 'r', label='en-32')
+    plt.plot(C, y_val2, 'b', label='en-24')
+    plt.xlabel('temperature')
+    plt.ylabel('Boltzmann probability')
+    #plt.axis([0, 600000.0, 0.0,15.0])
+    plt.axis([0.1, 40.0, 0.0, 1.0])
+    plt.legend(loc='upper center')
+    plt.savefig('temp1-2.png')    
 
-plt.plot(C, y_val1, 'r', label='en-32')
-plt.plot(C, y_val2, 'b', label='en-24')
-plt.xlabel('temperature')
-plt.ylabel('Boltzmann probability')
-#plt.axis([0, 600000.0, 0.0,15.0])
-plt.axis([0.1, 40.0, 0.0, 1.0])
-plt.legend(loc='upper center')
-plt.savefig('temp1-2.png')    
-
+    plt.figure(2)
+    plt.plot(levels, prob[9],'r',label='T=1')
+    plt.legend(loc='upper right')
+    plt.xlabel('energies')
+    plt.ylabel('Boltzmann probability')
+    plt.savefig('temp1.png')
+    #_____________________________________________
+    plt.figure(3)
+    plt.plot(levels, prob[199],'r',label='T=20')
+    plt.legend(loc='upper right')
+    plt.xlabel('energies')
+    plt.ylabel('Boltzmann probability')
+    plt.savefig('temp20.png')
+    return prob
 #_____________________________________________________________________________________
-# MH algorithm sampling IDs in the complete space
-train_labels=mh.gen_train_labels(complete, Hs, Ms)
-train=[]
-for i in range(len(complete)):    
-    row2=complete[i]
-    train.append(np.hstack((row2,train_labels[i])))
-np.reshape(train,(len(train),17))
-train2=sorted(train,key=itemgetter(-1))
 
 def get_MH_sampled_IDs(data,classes,temp): 
     temp_val=[temp]    
@@ -157,19 +165,35 @@ def get_MH_sampled_IDs(data,classes,temp):
     result=result.reshape((len(result),nr*nr+2))
     return result
     
-
 def histogr(output):    
     import pylab as P
     # the histogram of the data with histtype='step'
     P.figure()
     n, bins, patches = P.hist(output, 50, normed=1, histtype='stepfilled')
     P.setp(patches, 'facecolor', 'g', 'alpha', 0.75)
-    P.savefig('simulnt1.png')     
+    P.savefig('simul_distr.png')     
 
-train_classes=np.arange(0,len(levels),1)
-temp=5.0
-train_res=get_MH_sampled_IDs(train2,train_classes,temp) 
-H=[]
-for i in range(len(train_res)):
-    H.append(train_res[i][-2])
-histogr(H)
+def main(): 
+    # MH algorithm sampling IDs in the complete space
+    (complete, Hs, Ms)=complete_dataset(16)
+    prob=compute_boltz_weights(Hs)
+    print prob
+    train_res=mh.get_MH_samples(complete)
+    #train_labels=mh.gen_train_labels(complete, Hs, Ms)
+    #train=[]
+    #for i in range(len(complete)):    
+    #    row2=complete[i]
+    #    train.append(np.hstack((row2,train_labels[i])))
+    #np.reshape(train,(len(train),17))
+    #train2=sorted(train,key=itemgetter(-1))
+  
+    #train_classes=np.arange(0,len(levels),1)
+    #temp=40.0
+    #train_res=get_MH_sampled_IDs(train2,train_classes,temp) 
+    H=[]
+    for i in range(len(train_res)):
+        H.append(train_res[i][-2])
+    histogr(H)
+    
+if __name__=='__main__':
+    main()    

@@ -16,6 +16,7 @@ import MH_dataset_generator as mh
 import ising_model_princeton2 as I
 import matplotlib.pyplot as plt
 import collections
+import json
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
@@ -112,14 +113,23 @@ def choose_level2(classes, deck, freq):
         else:
             deck=deck+1
     return deck
+
+def record(results):
+    f = open('output.txt', 'a')
+    json.dump(results, f)
+    f.close()
               
-def get_MH_sampled_IDs(data,classes,freq):
+def get_MH_sampled_IDs(data,classes,freq, epochs):
     #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
     #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
     temp_val=[40]    
     iters=4000
-    N_seeds=10    
     nr=4
+    N_seeds=2 # initial number of seeds
+    fact=2 # increment factor of the number of seeds
+    total_seeds=N_seeds*(fact**epochs)
+    record_set=[N_seeds*(fact**k)-1 for k in range(epochs)]
+    result={}
     count=0
     all_M=[]
     all_H=[]
@@ -130,7 +140,8 @@ def get_MH_sampled_IDs(data,classes,freq):
     for T in temp_val:
         print T
         outer_set={}
-        for n in range(N_seeds):
+        for n in range(total_seeds):
+            print "seed", n        
             Hs=[]
             a1=I.Ising_lattice(nr)
             a1.random_conf(data)
@@ -186,12 +197,16 @@ def get_MH_sampled_IDs(data,classes,freq):
         #print outer_set[0]
         #plt.subplot(212)
         #plt.plot(t2, outer_set[9], 'r')
-        #plt.show()                
-        
-        count=count+1
-    result=R
-    result=np.array(result)
-    result=result.reshape((len(result),nr*nr+2))
+        #plt.show()
+            if n in record_set:                
+                res=np.array(R)
+                res=res.reshape((len(res),nr*nr+2))
+                result[count]=res
+                count=count+1
+ 
+    #result=R
+    #result=np.array(result)
+    #result=result.reshape((len(result),nr*nr+2))
     return result
     
 
@@ -243,12 +258,25 @@ def main():
     np.reshape(train,(len(train),17))
     
     train2=sorted(train,key=itemgetter(-1))
-    train_classes=np.unique(train_labels)    
-    train_res=get_MH_sampled_IDs(train2,train_classes,freq) 
-    H=[]
-    for i in range(len(train_res)):
-        H.append(train_res[i][-2])
-    histogr(H)    
+    train_classes=np.unique(train_labels)  
+    epochs=5
+    train_res=get_MH_sampled_IDs(train2,train_classes,freq,epochs)
+    for i in range(epochs):
+        res=train_res[i]
+        H=[]
+        for j in range(len(res)):
+            H.append(res[j][-2])
+        
+        count=collections.Counter(H)
+        ens=[]
+        for k in np.sort(count.keys()):
+            ens.append(count[k])    
+        freq2=np.array(ens)/np.float(len(H)) # estimated fdrequencies of the ditribution 
+        freq1=freq2.tolist()
+        print "energy values:", np.sort(count.keys())
+        print "frequencies:",freq1
+        #histogr(H)
+        record(freq1)
  
 if __name__=='__main__':
     main()
