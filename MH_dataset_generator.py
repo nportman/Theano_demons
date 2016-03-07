@@ -78,7 +78,7 @@ def gen_train_labels(training_data, training_H, training_M):
 
     #training_100=training_data
     #labels_100=train_labels   
-    print 'Computed training labels (Hamiltonians or Magnetizations)'
+    #print 'Computed training labels (Hamiltonians or Magnetizations)'
     return train_labels
 #______________________________________________________________________________
 def partition(training_data,train_labels):

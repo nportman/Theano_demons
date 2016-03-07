@@ -1,7 +1,14 @@
-# This script investigates convergence of the
-# modified M-H algorithm by increasing the number of random seeds by a factr of 4
+# This script generates NON-INTERSECTING training and testing datasets with
+# energy distributions of ferromagnetic systems (4 by 4 lattice-like configurations)
+# achieved at thermal equillibrium.
+# Metropolis-Hastings algorithm has been modified to perform sampling over the 
+# configurations present in training(testing) dataset only.
+# Prior probability distribution (a variable called 'freq')over the complete 
+# space of configurations is used here to compute transition probabilities from
+# going to energy levels (i+1)(i-1) from the current energy level i. 
+
 """
-Created on Mon, Marhc 07, 2016
+Created on Mon March 07, 2016
 
 @author: nportman
 """
@@ -9,6 +16,7 @@ Created on Mon, Marhc 07, 2016
 #import sknn
 #from sknn.mlp import Regressor, Layer
 from itertools import product
+import csv
 import numpy as np
 import random
 import gzip
@@ -23,7 +31,6 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
 from operator import itemgetter
 from scipy import stats
-
 # plotting data    
 def show_results(outer_set,temp_val, all_M, all_H):
     fig = plt.figure()
@@ -58,6 +65,14 @@ def show_results(outer_set,temp_val, all_M, all_H):
     plt.savefig('new_dat.png') 
 #show_results(outer_set,temp_val, all_M, all_H)
     
+def write_to_csv(data, filename):# specify a csv file where you want to write you results
+    with open(filename+".csv", "wb") as csvfile:
+        csvwriter = csv.writer(csvfile, delimiter=',', dialect='excel')#, delimiter='\n ',  counts)
+        for x in data:        
+            #csvwriter.writerow([x,])
+            csvwriter.writerow(x)
+        csvfile.close()
+    
 def Hamiltonian(data):
     # define the energy of the ferromagnetic configuration
     sz=np.shape(data)
@@ -80,20 +95,7 @@ def rand_move(data,N):
     En=Hamiltonian(conf)
     M=Magn(conf)
     return (config, En, M)
- 
-def choose_level(data,classes,deck):
-    beta=np.random.random()
-    if deck==np.min(classes):
-        deck=deck+1
-    elif deck==np.max(classes):
-        deck=deck-1 
-    else:           
-        if beta<0.5:
-            deck=deck-1
-        else:    
-            deck=deck+1
-    return deck   # return  candidate energy level 
-    
+
 def choose_level2(classes, deck, freq):
     if deck==np.min(classes):
         deck=deck+1
@@ -116,33 +118,20 @@ def choose_level2(classes, deck, freq):
             deck=deck+1
     return deck
 
-def record(results):
-    f = open('output2.txt', 'a')
-    json.dump(results, f)
-    f.close()
-              
-def get_MH_sampled_IDs(data,classes,freq, epochs):
-    #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
-    #temp_val=[x for x in np.arange(0.001,20.0, 0.1)]
-    temp_val=[40]    
+def get_MH_sampled_IDs(data,classes,freq, r):
+    temp_val=[x for x in np.arange(0.1,40.5, 0.5)]    
     iters=4000
     nr=4
-    N_seeds=2 # initial number of seeds
-    fact=4 # increment factor of the number of seeds
-    total_seeds=N_seeds*(fact**epochs)
-    record_set=[N_seeds*(fact**k)-1 for k in range(epochs)]
-    result={}
-    count=0
+    N_seeds=10 # initial number of seeds
+    total_seeds=N_seeds*r
     all_M=[]
     all_H=[]
-    #repeats=np.zeros(len(temp_val))
     R=[]
     dat=np.array(data)
     
     for T in temp_val:
-        outer_set={}
+        print T
         for n in range(total_seeds):
-            print "seed",n
             Hs=[]
             a1=I.Ising_lattice(nr)
             a1.random_conf(data)
@@ -151,11 +140,9 @@ def get_MH_sampled_IDs(data,classes,freq, epochs):
             M=a1._M
             deck=a1._deck #https://www.google.ca/?gws_rd=ssl initialization
             for k in range(iters): # num of MH steps
-                #print 'fix this'
                 kB = 1.0
                 # let us consider another configuration
-                label=choose_level2(classes,deck,freq) # next candidate from the label group
-                #label=randint(np.max([0,deck-1]),np.min([np.max(classes),deck+1]))                
+                label=choose_level2(classes,deck,freq) # next candidate from the label group               
                 ids=np.where(dat[:,-1]==label)
                 idd=ids[0]
                 group=dat[idd]# look at this level group
@@ -167,17 +154,15 @@ def get_MH_sampled_IDs(data,classes,freq, epochs):
                     conf=conf2 # go downhill
                     En=En_2
                     M=M_2
-                    flag=1
                     deck=label
                 else:  
                     #accept with prob
                     your_random_number = np.random.random()
                     if (your_random_number < np.exp(-dE/(kB*T))):
                         #go uphill
-                        conf=conf2 # update lattice value i,j and the corresponding energy                   
+                        conf=conf2                   
                         En=En_2
                         M=M_2
-                        flag=1
                         deck=label
 
 #                we have now decided to either stay where we were, or change
@@ -187,27 +172,10 @@ def get_MH_sampled_IDs(data,classes,freq, epochs):
                     all_M.append(M)
                     all_H.append(En)
                     Hs.append(En)
-            outer_set[n]=Hs
-        
-        #t1 = np.arange(0, len(outer_set[0]))
-        #t2 = np.arange(0, len(outer_set[99]))
 
-        #plt.figure(1)
-        #plt.subplot(211)
-        #plt.plot(t1, outer_set[0], 'b')
-        #print outer_set[0]
-        #plt.subplot(212)
-        #plt.plot(t2, outer_set[9], 'r')
-        #plt.show()
-            if n in record_set:                
-                res=np.array(R)
-                res=res.reshape((len(res),nr*nr+2))
-                result[count]=res
-                count=count+1
- 
-    #result=R
-    #result=np.array(result)
-    #result=result.reshape((len(result),nr*nr+2))
+    result=R
+    result=np.array(result)
+    result=result.reshape((len(result),nr*nr+2))
     return result
     
 
@@ -233,52 +201,40 @@ def main():
     freq=np.array(val)/np.float(len(train_labels))
     
     #partition into training 90% and testing 10% datasets
-    #[train,test]=mh.partition(training_data,train_labels)
-    #train_set=train[0]
-    #train_y=train[1]
-    #test_set=test[0]
-    #test_y=test[1]
-    #test_classes=np.unique(test_y)
-    #train_classes=np.unique(train_y)
-    #training=[]
-    #testing=[]
-    #for i in range(len(train_set)):
-    #row=train_set[i]
-    #training.append(np.hstack((row,train_y[i])))
-    #for i in range(len(test_set)):    
-    #row2=test_set[i]
-    #testing.append(np.hstack((row2,test_y[i])))
-    #np.reshape(testing,(len(testing),17))
-    #np.reshape(training,(len(training),17))
+    [train,test]=mh.partition(training_data,train_labels)
+    train_set=train[0]
+    train_y=train[1]
+    test_set=test[0]
+    test_y=test[1]
+    test_classes=np.unique(test_y)
+    train_classes=np.unique(train_y)
+    training=[]
+    testing=[]
+    for i in range(len(train_set)):
+        row=train_set[i]
+        training.append(np.hstack((row,train_y[i])))
+    for i in range(len(test_set)):    
+        row2=test_set[i]
+        testing.append(np.hstack((row2,test_y[i])))
+    np.reshape(testing,(len(testing),17))
+    np.reshape(training,(len(training),17))
     
-    #train2=sorted(training,key=itemgetter(-1))
-    #test2=sorted(testing,key=itemgetter(-1))
-    train=[]
-    for i in range(len(training_data)):    
-        row2=training_data[i]
-        train.append(np.hstack((row2,train_labels[i])))
-    np.reshape(train,(len(train),17))
-    
-    train2=sorted(train,key=itemgetter(-1))
-    train_classes=np.unique(train_labels)    
-    epochs=2
-    train_res=get_MH_sampled_IDs(train2,train_classes,freq,epochs)  
-    for i in range(epochs):
-        res=train_res[i]
-        H=[]
-        for j in range(len(res)):
-            H.append(res[j][-2])
-        
-        count=collections.Counter(H)
-        ens=[]
-        for k in np.sort(count.keys()):
-            ens.append(count[k])    
-        freq2=np.array(ens)/np.float(len(H)) # estimated fdrequencies of the ditribution 
-        freq1=freq2.tolist()
-        print "energy values:", np.sort(count.keys())
-        print "frequencies:",freq1
-        #histogr(H)
-        record(freq1)
+    train2=sorted(training,key=itemgetter(-1))
+    test2=sorted(testing,key=itemgetter(-1))
+    print "Initial number of random seeds is set to 10"
+    print "It yields a training dataset of 10,000 samples per temperature"
+    print "The temperature range is set to [0.1 40.0] with step size 0.5"
+    expr=input("Would you like to increase the training dataset size? 'y'/'n'")
+    if expr=='y':
+        r=input("Enter a factor (integer) by which to increase the sample size")
+    elif expr=='n':
+        r=1  
+    else:
+        r=1
+    train_res=get_MH_sampled_IDs(train2,train_classes,freq,r)
+    test_res=get_MH_sampled_IDs(test2,test_classes,freq,1)
+    write_to_csv(train_res, "training")
+    write_to_csv(test_res, "testing")
     
 if __name__=='__main__':
     main()
