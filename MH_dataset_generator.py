@@ -46,11 +46,12 @@ def complete_dataset(reps):
     dim1=len(training_data)
     training_H=[]
     training_M=[]
+    dim2=int(np.sqrt(reps))
     # compute Hamiltonian of each system
     # create lattice structures
     for i in range(dim1):
         config=training_data[i]
-        config=np.reshape(config,(4,4))
+        config=np.reshape(config,(dim2,dim2))
         training_H.append(Hamiltonian(config))
         training_M.append(Magn(config))
     return (training_data,training_H,training_M)
